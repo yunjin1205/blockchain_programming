@@ -18,7 +18,6 @@ describe("My Token", () => {
       mintingAmount,
     ]);
   });
-
   describe("Basic state value check", () => {
     it("should return name", async () => {
       expect(await myTokenC.name()).equal("MyToken");
@@ -42,6 +41,14 @@ describe("My Token", () => {
       expect(await myTokenC.balanceOf(signer0)).equal(
         mintingAmount * 10n ** decimals,
       );
+    });
+    it("should revert when a non-manager mints", async () => {
+      const hacker = signers[2];
+      await expect(
+        myTokenC
+          .connect(hacker)
+          .mint(hre.ethers.parseUnits("10000", decimals), hacker.address),
+      ).to.be.revertedWith("You are not authorized to manage this contract");
     });
   });
 
@@ -128,12 +135,12 @@ describe("My Token", () => {
       const signer1 = signers[1];
       const amount = hre.ethers.parseUnits("10", decimals);
 
-      // 1. approve: signer0 grants signer1 permission to spend MT.
+      // 1. approve
       await expect(myTokenC.connect(signer0).approve(signer1.address, amount))
         .to.emit(myTokenC, "Approval")
         .withArgs(signer1.address, amount);
 
-      // 2. transferFrom: signer1 moves signer0's MT to signer1.
+      // 2. transferFrom
       await expect(
         myTokenC
           .connect(signer1)
@@ -142,7 +149,7 @@ describe("My Token", () => {
         .to.emit(myTokenC, "Transfer")
         .withArgs(signer0.address, signer1.address, amount);
 
-      // 3. Check both balances and the consumed allowance.
+      // 3. check balance
       expect(await myTokenC.balanceOf(signer0.address)).equal(
         mintingAmount * 10n ** decimals - amount,
       );
